@@ -12,3 +12,8 @@ The data contains 2730 different samples of bird vocalizations in MP3 format fro
 - The processed dataframes are stored in [`feature_extraction`](./feature_extraction/).
 - Notebook Files:
 
+## Dependencies
+- The feature extraction process relies on `librosa`. Please make sure you install it with the following
+  command:
+  - `conda install -c conda-forge librosa`
+  - or `pip install librosa`
