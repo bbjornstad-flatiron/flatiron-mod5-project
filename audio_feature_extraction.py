@@ -1,6 +1,8 @@
 import pandas as pd
 import numpy as np
 import librosa
+import librosa.display
+import matplotlib.pyplot as plt
 
 
 class AudioFeatureExtractor:
@@ -26,7 +28,6 @@ class AudioFeatureExtractor:
         Extracts the chromagram from the given audio
         This is a lot like a spectrogram except we are mapping
         onto the chromatic scale.
-
         """
         chroma_stft = librosa.feature.chroma_stft(
             audio,
@@ -51,7 +52,7 @@ class AudioFeatureExtractor:
         return chroma_cens
 
     def extract_melspectrogram(self, audio):
-        melspectrogram = librosa.feature.chroma_cens(
+        melspectrogram = librosa.feature.melspectrogram(
             audio,
             sr=self.sr,
             n_fft=self.frame_length,
@@ -232,3 +233,18 @@ class BatchExtractor:
             
     def batch_extract_and_merge(self, features_to_merge, results_folder='feature_extraction/'):
         pass
+    
+class FeatureVisualizer:
+    def __init__(self, feature_folder='feature_extraction/', default_figure_size=(18, 10)):
+        self.default_figure_size = default_figure_size
+        self.feature_folder = feature_folder
+        
+    def plot_melspec(self, sample_name):
+        melspec_fig = plt.figure(figsize=self.default_figure_size)
+        try:
+            melspec = pd.read_csv(f'{self.feature_folder}{sample_name}_melspec_features.csv').T
+        except FileNotFoundError:
+            print('Feature matrix not found...did you remember to extract the features?')
+        melspec_db = librosa.power_to_db(melspec, ref=np.max)
+        librosa.display.specshow(melspec_db, x_axis='time', y_axis='mel')
+        return melspec_fig
