@@ -1,31 +1,3 @@
 ,duration_seconds,english_cname,file_id,file_name,genus,species,type
-816,12,Clark's Nutcracker,121020,XC121020.mp3,Nucifraga,columbiana,call
-774,68,Cassin's Vireo,102950,XC102950.mp3,Vireo,cassinii,song
-975,43,Flammulated Owl,379915,XC379915.mp3,Psiloscops,flammeolus,"call, male"
-356,18,Bewick's Wren,309472,XC309472.mp3,Thryomanes,bewickii,song
-2422,46,Warbling Vireo,103099,XC103099.mp3,Vireo,gilvus,song
-407,45,Black-chinned Sparrow,428177,XC428177.mp3,Spizella,atrogularis,song
-357,18,Bewick's Wren,313900,XC313900.mp3,Thryomanes,bewickii,"alarm call, call"
-1942,39,Pygmy Nuthatch,229777,XC229777.mp3,Sitta,pygmaea,call
-1361,27,Lesser Goldfinch,418262,XC418262.mp3,Spinus,psaltria,"call, male, song"
-1252,28,Hutton's Vireo,278085,XC278085.mp3,Vireo,huttoni,"male, song"
-121,10,American Dusky Flycatcher,124632,XC124632.mp3,Empidonax,oberholseri,call
-593,29,California Quail,481140,XC481140.mp3,Callipepla,californica,call
-2182,19,Song Sparrow,408093,XC408093.mp3,Melospiza,melodia,song
-1068,37,Green-tailed Towhee,126437,XC126437.mp3,Pipilo,chlorurus,song
-1402,60,Lincoln's Sparrow,382748,XC382748.mp3,Melospiza,lincolnii,song
-548,10,California Gnatcatcher,482877,XC482877.mp3,Polioptila,californica,call
-2029,18,Ridgway's Rail,129125,XC129125.mp3,Rallus,obsoletus,call
-1811,20,Orange-crowned Warbler,404198,XC404198.mp3,Leiothlypis,celata,song
-869,35,Common Poorwill,313807,XC313807.mp3,Phalaenoptilus,nuttallii,song
-72,21,American Bushtit,228622,XC228622.mp3,Psaltriparus,minimus,call
-2538,17,White-breasted Nuthatch,306138,XC306138.mp3,Sitta,carolinensis,call
-2350,4,Tricolored Blackbird,344824,XC344824.mp3,Agelaius,tricolor,"male, song"
-1611,71,Northern Mockingbird,54019,XC54019.mp3,Mimus,polyglottos,song
-1414,20,Long-eared Owl,332497,XC332497.mp3,Asio,otus,"begging call, juvenile"
-2510,41,Western Wood Pewee,421652,XC421652.mp3,Contopus,sordidulus,"dawn song, song"
-1172,6,House Finch,220519,XC220519.mp3,Haemorhous,mexicanus,call
-911,18,Dark-eyed Junco,481214,XC481214.mp3,Junco,hyemalis,song
-151,7,American Grey Flycatcher,124836,XC124836.mp3,Empidonax,wrightii,dawn song
-82,31,American Bushtit,339894,XC339894.mp3,Psaltriparus,minimus,"call, male"
-309,18,Bell's Vireo,310078,XC310078.mp3,Vireo,bellii,song
+1948,57,Pygmy Nuthatch,229772,XC229772.mp3,Sitta,pygmaea,call
+81,31,American Bushtit,283953,XC283953.mp3,Psaltriparus,minimus,call
