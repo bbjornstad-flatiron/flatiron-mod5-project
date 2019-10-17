@@ -455,6 +455,69 @@ class BatchExtractor:
             results_folder=results_folder)
         self.merge_features(extraction_methods, results_folder=results_folder)
 
+    def merge_and_flatten_features(
+            self,
+            extraction_methods,
+            results_folder='feature_extraction/',
+            label=False):
+        """
+        Merges the given list of features into a flattened dataframe, where each
+        row represents all of the feature data for each frame for a given
+        sample, and where the rows with fewer frames have those corresponding
+        columns set to 0.
+
+        Parameters:
+        -----------
+            :list(str) extraction_methods:  a list containing string 
+                                            abbreviations for the features which
+                                            we want to merge and flatten into
+                                            a single dataframe.
+            :str results_folder:            a string indicating a path to a
+                                            folder containing feature matrices
+                                            to merge
+            :bool label:                    a boolean indicating whether or not
+                                            each row should be labeled with its
+                                            associated target.
+
+        Returns:
+        --------
+            :(1, frames*n_feats) df:        a dataframe indexed by the name of
+                                            the sample (derived from file name)
+                                            and containing columns of the form
+                                            feat_{attr}_{frame} where attribute
+                                            represents a single attribute of a
+                                            given feature and frame represents
+                                            the frame number.
+        """
+        flattened_df = pd.DataFrame()
+
+        for method in extraction_methods:
+            method_df = pd.DataFrame()
+            max_frames = 0
+            for file_name in self.audio_index.file_name:
+                name = file_name[:-4]
+                feature_matrix = pd.read_csv(
+                    f'{results_folder}{name}_{method}_features.csv')
+
+                if len(feature_matrix.index) > max_frames:
+                    max_frames = len(feature_matrix.index)
+
+                col_names = list(feature_matrix.columns)
+                new_row = np.ravel(feature_matrix.to_numpy(), order='F')
+                new_series = pd.Series(new_row)
+                new_series.name = name
+                method_df = method_df.append(new_series)
+
+            method_df.columns = [
+                f'{col_name}_{t}' for col_name in col_names for t in range(max_frames)
+            ]
+
+            flattened_df = pd.concat([flattened_df, method_df], axis=1)
+
+        if label:
+            flattened_df['label'] = self.audio_index.label
+        return flattened_df.fillna(0)
+
 
 class FeatureVisualizer:
     def __init__(
