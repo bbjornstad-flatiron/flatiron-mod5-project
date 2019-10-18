@@ -523,7 +523,7 @@ class FeatureVisualizer:
     def __init__(
             self,
             feature_folder='feature_extraction/',
-            default_figure_size=(18, 10)):
+            default_figure_size=(18, 8)):
         self.default_figure_size = default_figure_size
         self.feature_folder = feature_folder
 
