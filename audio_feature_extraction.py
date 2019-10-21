@@ -23,13 +23,19 @@ class AudioFeatureExtractor:
                             length that windows jump (currently 1/4 a window)
         :int n_mfcc:        the desired number of Mel-frequency cepstral
                             coefficients to compute
+        :int fmin:          the minimum frequency used to compute certain 
+                            features
+        :int fmax:          the maximum frequency used to compute certain
+                            features
     """
 
     def __init__(
             self,
             sr=22050,
             frame_length=1024,
-            n_mfcc=20):
+            n_mfcc=20,
+            fmin=1024,
+            fmax=8192):
         """
         Initializes an AudioFeatureExtractor object
 
@@ -41,11 +47,17 @@ class AudioFeatureExtractor:
                                 be used in feature extraction (default 1024)
             :int n_mfcc:        the number of Mel-frequency cepstral
                                 coefficients to compute (default 20)
+            :int fmin:          integer for the lowest frequency that will be
+                                computed in certain features (default 1024)
+            :int fmax:          integer for the highest frequency that will be
+                                computed in certain features.
         """
         self.sr = sr
         self.frame_length = frame_length
         self.hop_length = int(self.frame_length / 4)
         self.n_mfcc = n_mfcc
+        self.fmin = fmin
+        self.fmax = fmax
 
     def get_audio(self, file_path):
         """
@@ -58,6 +70,19 @@ class AudioFeatureExtractor:
         # -----
         # Feature Extraction
         # -----
+    def extract_stft(self, audio):
+        """
+        Extracts the short term fourier transform of the given audio, a process
+        in which an audio sample is chunked into frames and the associated
+        frequency energy content is analyzed, thus transforming from the time
+        domain to the frequency domain (in timed chunks).
+        """
+        stft = librosa.stft(
+            audio,
+            n_fft=self.frame_length,
+            hop_length=self.hop_length)
+        return stft
+
     def extract_chroma_stft(self, audio):
         """
         Extracts a chromagram of the given audio, like a spectrogram but binned 
@@ -99,7 +124,9 @@ class AudioFeatureExtractor:
             audio,
             sr=self.sr,
             n_fft=self.frame_length,
-            hop_length=self.hop_length)
+            hop_length=self.hop_length,
+            fmin=self.fmin,
+            fmax=self.fmax)
         return melspectrogram
 
     def extract_mfcc(self, audio):
@@ -112,7 +139,9 @@ class AudioFeatureExtractor:
             sr=self.sr,
             n_mfcc=self.n_mfcc,
             n_fft=self.frame_length,
-            hop_length=self.hop_length)
+            hop_length=self.hop_length,
+            fmin=self.fmin,
+            fmax=self.fmax)
         return mfcc
 
     def extract_rms(self, audio):
@@ -290,6 +319,12 @@ class BatchExtractor:
                                     as a dataframe, representing metadata
                                     and labeling information for each audio
                                     sample in the audio_folder
+        :int fmin:                  integer representing the minimum frequency
+                                    that will be computed for certain spectral
+                                    based features.
+        :int fmax:                  integer representing the maximum frequency
+                                    that will be computed for certain spectral
+                                    based features.
     """
 
     def __init__(
@@ -298,7 +333,9 @@ class BatchExtractor:
             frame_length=1024,
             n_mfcc=20,
             audio_folder='raw_data/',
-            audio_index='bird_vocalization_index.csv'):
+            audio_index='bird_vocalization_index.csv',
+            fmin=1024,
+            fmax=8192):
         """
         Initializes a BatchExtractor object
 
@@ -320,6 +357,12 @@ class BatchExtractor:
                                     a file_name column identifying the file
                                     location of the MP3 relative to the
                                     audio_folder.
+            :int fmin:              integer representing the minimum frequency
+                                    to be used for computation of certain
+                                    spectral based features (default 1024)
+            :int fmax:              integer representing the maximum frequency
+                                    to be used for computation fo certain
+                                    spectral based features (default 8192)
         """
 
         self.audio_folder = audio_folder
@@ -334,12 +377,17 @@ class BatchExtractor:
         self.sr = sr
         self.frame_length = frame_length
         self.n_mfcc = n_mfcc
+        self.fmin = fmin
+        self.fmax = fmax
+
         # intialize an underlying AudioFeatureExtractor with the given params.
         self.afe = AudioFeatureExtractor(
-            self.sr, self.frame_length, self.n_mfcc)
+            self.sr, self.frame_length, self.n_mfcc, self.fmin, self.fmax)
+
         # contains associations between string short forms and extraction
         # methods in the object's AudioFeatureExtractor
-        self.extraction_dict = {'mfcc': self.afe.extract_mfcc,
+        self.extraction_dict = {'stft': self.afe.extract_stft,
+                                'mfcc': self.afe.extract_mfcc,
                                 'melspec': self.afe.extract_melspectrogram,
                                 'zcr': self.afe.extract_zero_crossing_rate,
                                 'ccqt': self.afe.extract_chroma_cqt,
@@ -481,7 +529,7 @@ class BatchExtractor:
 
         Returns:
         --------
-            :(1, frames*n_feats) df:        a dataframe indexed by the name of
+            :(n, frames*n_feats) df:        a dataframe indexed by the name of
                                             the sample (derived from file name)
                                             and containing columns of the form
                                             feat_{attr}_{frame} where attribute
@@ -537,6 +585,7 @@ class FeatureVisualizer:
             print('Feature matrix not found...did you remember to extract the features?')
         melspec_db = librosa.power_to_db(melspec, ref=np.max)
         librosa.display.specshow(melspec_db, x_axis='time', y_axis='mel')
+        plt.title(f'Melspectrogram -- {sample_name}')
         return melspec_fig
 
     def plot_chromagram(self, sample_name):
@@ -548,4 +597,18 @@ class FeatureVisualizer:
         except FileNotFoundError:
             print('Feature matrix not found...did you remember to extract the features?')
         librosa.display.specshow(cstft, x_axis='time', y_axis='chroma')
+        plt.title(f'Chromagram -- {sample_name}')
         return cstft_fig
+
+    def plot_spectrogram(self, sample_name):
+        stft_fig = plt.figure(figsize=self.default_figure_size)
+        try:
+            stft = pd.read_csv(
+                f'{self.feature_folder}{sample_name}_stft_features.csv').T
+            stft = stft.to_numpy()
+        except FileNotFoundError:
+            print('Feature matrix not found...did you remember to extract the features?')
+        stft_db = librosa.amplitude_to_db(np.abs(stft), ref=np.max)
+        librosa.display.specshow(stft_db, y_axis='linear')
+        plt.title(f'Spectrogram -- {sample_name}')
+        return stft_fig
