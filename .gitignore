@@ -3,3 +3,4 @@
 *raw_data*
 *__pycache__
 feature_extraction/
+*.csv

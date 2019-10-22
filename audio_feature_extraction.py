@@ -34,8 +34,11 @@ class AudioFeatureExtractor:
             sr=22050,
             frame_length=1024,
             n_mfcc=20,
+            bp_filter=False,
             fmin=1024,
-            fmax=8192):
+            fmax=8192,
+            preemphasis=False,
+            pre_filter_coef=0.97):
         """
         Initializes an AudioFeatureExtractor object
 
@@ -47,25 +50,94 @@ class AudioFeatureExtractor:
                                 be used in feature extraction (default 1024)
             :int n_mfcc:        the number of Mel-frequency cepstral
                                 coefficients to compute (default 20)
+            :bool bp_filter:    boolean identifying whether stfts should be
+                                hard bandpass filtered on computation (default
+                                False)
             :int fmin:          integer for the lowest frequency that will be
                                 computed in certain features (default 1024)
             :int fmax:          integer for the highest frequency that will be
                                 computed in certain features.
+            :bool preemphasis:  a boolean indicating whether or not preemphasis
+                                filter should be applied to the audio upon
+                                loading with get_audio (default False)
+            :float pre_filter_coef: a float between 0 and 1 that represents the
+                                filter coefficient to be used in preemphasis
+                                filtering (default 0.97)
         """
         self.sr = sr
         self.frame_length = frame_length
         self.hop_length = int(self.frame_length / 4)
         self.n_mfcc = n_mfcc
+        self.bp_filter = bp_filter
         self.fmin = fmin
         self.fmax = fmax
+        self.preemphasis = preemphasis
+        self.pre_filter_coef = pre_filter_coef
 
+        # -----
+        # Utilities
+        # -----
     def get_audio(self, file_path):
         """
         Gets audio as a numpy array with the object's sample rate from the 
         given string file path.
         """
         x, sr = librosa.load(file_path, sr=self.sr)
+        if self.preemphasis:
+            x = self.apply_preemphasis(x)
         return x
+
+    def apply_preemphasis(self, audio):
+        """
+        Applies a preemphasis filter to the given audio. A preemphasis filter is
+        a simple first-order differencing filter applied to audio, which can
+        have the effect of emphasizing features.
+        """
+        pre = librosa.effects.preemphasis(audio, coef=self.pre_filter_coef)
+        return pre
+
+    def set_preemphasis(self, flag_apply, filter_coef=0.97):
+        """
+        Sets the preemphasis parameters for the apply_preemphasis function.
+
+        Parameters:
+        -----------
+            :bool flat_apply:       boolean flag indicating whether or not
+                                    preemphasis should be applied when loading
+                                    audio with get_audio
+            :float filter_coef:     float between 0 and 1 indicating the desired
+                                    filter coeffecient to use when applying
+                                    preemphasis filtering (default 0.97)
+        """
+        self.preemphasis = flag_apply
+        self.pre_filter_coef = filter_coef
+
+    def bp_filter_stft(self, S):
+        """
+        Removes sections of the given stft below and above the given min and max
+        frequencies, effectively a hard bandpass filter between the given
+        frequency window. Set the params with set_bp_filter.
+
+        Parameters:
+        -----------
+            :ndarray S:             stft array
+        """
+        fft_freqs = librosa.fft_frequencies(self.sr, self.frame_length)
+        # get the indices where the frequencies occur
+        min_index = next(i for i, f in enumerate(fft_freqs) if f > self.fmin)
+        max_index = next(i for i, f in enumerate(fft_freqs) if f > self.fmax)
+
+        s_filt = S
+        s_filt[:min_index, :] = 0
+        s_filt[max_index:, :] = 0
+        return s_filt
+
+        return S[min_index:max_index, :]
+
+    def set_bp_filter(self, flag_apply, fmin, fmax):
+        self.bp_filter = flag_apply
+        self.fmin = fmin
+        self.fmax = fmax
 
         # -----
         # Feature Extraction
@@ -81,6 +153,8 @@ class AudioFeatureExtractor:
             audio,
             n_fft=self.frame_length,
             hop_length=self.hop_length)
+        if self.bp_filter:
+            stft = self.bp_filter_stft(stft)
         return stft
 
     def extract_chroma_stft(self, audio):
@@ -402,6 +476,48 @@ class BatchExtractor:
                                 'tonnetz': self.afe.extract_tonnetz,
                                 'poly': self.afe.extract_poly_features
                                 }
+
+    def set_preemphasis(self, flag_apply, filter_coef=0.97):
+        """
+        Sets batchwide preemphasis filter settings
+
+        Parameters:
+        -----------
+            :bool flag_apply:       boolean value indicating whether or not
+                                    preemphasis filtering should be applied
+                                    to the audio.
+            :float filter_coef:     float between 0 and 1 which is the
+                                    coefficient of preemphasis filtering
+                                    (default 0.97)
+        """
+        self.afe.set_preemphasis(flag_apply, filter_coef)
+
+    def get_preemphasis_params(self):
+        """
+        Gets the current batchwide preemphasis filter prameters.
+        """
+        return self.afe.preemphasis, self.afe.pre_filter_coef
+
+    def set_bp_filter(self, flag_apply, fmin, fmax):
+        """
+        Sets batchwide hard bandpass filter settings.
+
+        Parameters:
+        -----------
+            :bool flag_apply:       boolean value indicating whether or not
+                                    bandpass filtering should be applied
+            :int fmin:              integer representing the minimum frequency
+                                    which should be included after filtering
+            :int fmax:              integer representing the maximum frequency
+                                    which should be included after filtering
+        """
+        self.afe.set_bp_filter(flag_apply, fmin=fmin, fmax=fmax)
+
+    def get_bp_filter_params(self):
+        """
+        Gets the current batchwide bandpass filter settings.
+        """
+        return self.afe.bp_filter, self.afe.fmin, self.afe.fmax
 
     def batch_extract_feature(
             self,
